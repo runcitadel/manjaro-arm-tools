@@ -308,6 +308,7 @@ create_rootfs_img() {
             echo "No OEM setup!"
             ;;
         phosh|lomiri)
+            echo "Configure autologin for user 'manjaro'"
             $NSPAWN $ROOTFS_IMG/rootfs_$ARCH groupadd -r autologin
             $NSPAWN $ROOTFS_IMG/rootfs_$ARCH gpasswd -a manjaro autologin
             ;;
