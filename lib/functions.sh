@@ -304,7 +304,7 @@ create_rootfs_img() {
     cp -a /etc/ca-certificates/extracted/tls-ca-bundle.pem $ROOTFS_IMG/rootfs_$ARCH/etc/ca-certificates/extracted/
     echo "manjaro-arm" | tee --append $ROOTFS_IMG/rootfs_$ARCH/etc/hostname 1> /dev/null 2>&1
     case "$EDITION" in
-        cubocore|plasma-mobile|plasma-mobile-dev|lomiri)
+        cubocore|plasma-mobile|plasma-mobile-dev|phosh|lomiri)
             echo "No OEM setup!"
             ;;
         phosh|lomiri)
@@ -335,12 +335,12 @@ create_rootfs_img() {
         
         echo "Fix background"
         $NSPAWN $ROOTFS_IMG/rootfs_$ARCH mkdir -pv /usr/share/backgrounds
-        $NSPAWN $ROOTFS_IMG/rootfs_$ARCH convert /usr/share/wallpapers/manjaro.jpg /usr/share/wallpapers/manjaro.png
-        $NSPAWN $ROOTFS_IMG/rootfs_$ARCH ln -s /usr/share/wallpapers/manjaro.png /usr/share/backgrounds/warty-final-ubuntu.png
+        $NSPAWN $ROOTFS_IMG/rootfs_$ARCH convert -verbose /usr/share/wallpapers/manjaro.jpg /usr/share/wallpapers/manjaro.png
+        $NSPAWN $ROOTFS_IMG/rootfs_$ARCH ln -sfv /usr/share/wallpapers/manjaro.png /usr/share/backgrounds/warty-final-ubuntu.png
         
         echo "Fix Maliit"
         $NSPAWN $ROOTFS_IMG/rootfs_$ARCH mkdir -pv /usr/lib/systemd/user/graphical-session.target.wants
-        $NSPAWN $ROOTFS_IMG/rootfs_$ARCH ln -s /usr/lib/systemd/user/maliit-server.service /usr/lib/systemd/user/graphical-session.target.wants/maliit-server.service
+        $NSPAWN $ROOTFS_IMG/rootfs_$ARCH ln -sfv /usr/lib/systemd/user/maliit-server.service /usr/lib/systemd/user/graphical-session.target.wants/maliit-server.service
     fi
     ### Lomiri Temporary service ends here  
     
