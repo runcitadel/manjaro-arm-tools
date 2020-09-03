@@ -366,7 +366,7 @@ create_rootfs_img() {
    $NSPAWN $ROOTFS_IMG/rootfs_$ARCH ln -sfv /usr/lib/systemd/user/indicator-network.service /usr/lib/systemd/user/ayatana-indicators.target.wants/indicator-network.service
    # Fix background
    $NSPAWN $ROOTFS_IMG/rootfs_$ARCH mkdir /usr/share/backgrounds
-   sudo cp /home/spikerguy/Downloads/manjaro.png $ROOTFS_IMG/rootfs_$ARCH/usr/share/wallpapers/
+   $NSPAWN $ROOTFS_IMG/rootfs_$ARCH convert /usr/share/wallpapers/manjaro.jpg /usr/share/wallpapers/manjaro.png
    $NSPAWN $ROOTFS_IMG/rootfs_$ARCH ln -s /usr/share/wallpapers/manjaro.png /usr/share/backgrounds/warty-final-ubuntu.png
    #Fix Maliit
    $NSPAWN $ROOTFS_IMG/rootfs_$ARCH mkdir /usr/lib/systemd/user/graphical-session.target.wants
