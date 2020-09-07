@@ -304,7 +304,7 @@ create_rootfs_img() {
     cp -a /etc/ca-certificates/extracted/tls-ca-bundle.pem $ROOTFS_IMG/rootfs_$ARCH/etc/ca-certificates/extracted/
     echo "manjaro-arm" | tee --append $ROOTFS_IMG/rootfs_$ARCH/etc/hostname 1> /dev/null 2>&1
     case "$EDITION" in
-        cubocore|plasma-mobile|plasma-mobile-dev|phosh|lomiri)
+        cubocore|plasma-mobile|plasma-mobile-dev)
             echo "No OEM setup!"
             ;;
         phosh|lomiri)
