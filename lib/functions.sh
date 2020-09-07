@@ -272,24 +272,24 @@ create_rootfs_img() {
     
     info "Enabling services..."
     # Enable services
-    $NSPAWN $ROOTFS_IMG/rootfs_$ARCH systemctl enable getty.target haveged.service 1> /dev/null 2>&1
-    $NSPAWN $ROOTFS_IMG/rootfs_$ARCH systemctl enable $SRV_EDITION 1> /dev/null 2>&1
+    $NSPAWN $ROOTFS_IMG/rootfs_$ARCH systemctl enable getty.target haveged.service
+    $NSPAWN $ROOTFS_IMG/rootfs_$ARCH systemctl enable $SRV_EDITION
     
     #disabling services depending on edition
     case "$EDITION" in
         mate|i3|xfce|lxqt)
-            $NSPAWN $ROOTFS_IMG/rootfs_$ARCH systemctl disable lightdm.service 1> /dev/null 2>&1
-            $NSPAWN $ROOTFS_IMG/rootfs_$ARCH usermod --expiredate= lightdm 1> /dev/null 2>&1
+            $NSPAWN $ROOTFS_IMG/rootfs_$ARCH systemctl disable lightdm.service
+            $NSPAWN $ROOTFS_IMG/rootfs_$ARCH usermod --expiredate= lightdm
             ;;
         sway)
-            $NSPAWN $ROOTFS_IMG/rootfs_$ARCH systemctl disable greetd.service 1> /dev/null 2>&1
+            $NSPAWN $ROOTFS_IMG/rootfs_$ARCH systemctl disable greetd.service
             ;;
         minimal|server|plasma-mobile|plasma-mobile-dev|phosh|cubocore)
             echo "No display manager to disable in $EDITION..."
             ;;
         *)
-            $NSPAWN $ROOTFS_IMG/rootfs_$ARCH systemctl disable sddm.service 1> /dev/null 2>&1
-            $NSPAWN $ROOTFS_IMG/rootfs_$ARCH usermod --expiredate= sddm 1> /dev/null 2>&1
+            $NSPAWN $ROOTFS_IMG/rootfs_$ARCH systemctl disable sddm.service
+            $NSPAWN $ROOTFS_IMG/rootfs_$ARCH usermod --expiredate= sddm
             ;;
     esac
 
