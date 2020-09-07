@@ -284,7 +284,7 @@ create_rootfs_img() {
         sway)
             $NSPAWN $ROOTFS_IMG/rootfs_$ARCH systemctl disable greetd.service
             ;;
-        minimal|server|plasma-mobile|plasma-mobile-dev|phosh|cubocore)
+        minimal|server|plasma-mobile|plasma-mobile-dev|phosh|cubocore|lomiri)
             echo "No display manager to disable in $EDITION..."
             ;;
         *)
