@@ -21,7 +21,9 @@ ARCH='aarch64'
 DEVICE='rpi4'
 EDITION='minimal'
 USER='manjaro'
+HOSTNAME='manjaro-arm'
 PASSWORD='manjaro'
+CARCH=$(uname -m)
 srv_list=/tmp/services_list
 
 #import conf file
@@ -62,6 +64,7 @@ usage_build_img() {
     echo "    -d <device>        Device the image is for. [Default = rpi4. Options = $(ls -m --width=0 "$PROFILES/arm-profiles/devices/")]"
     echo "    -e <edition>       Edition of the image. [Default = minimal. Options = $(ls -m --width=0 "$PROFILES/arm-profiles/editions/")]"
     echo "    -v <version>       Define the version the resulting image should be named. [Default is current YY.MM]"
+    echo "    -o                 Add overlay repo [mobile]."
     echo "    -i <package>       Install local package into image rootfs."
     echo "    -b <branch>        Set the branch used in the image. [Default = stable. Options = stable, testing or unstable]"
     echo "    -m                 Create bmap. ('bmap-tools' need to be installed.)"
@@ -133,7 +136,19 @@ prune_cache(){
     $NSPAWN $CHROOTDIR paccache -r
     umount $PKG_CACHE
 }
- 
+
+load_vars() {
+    local var
+
+    [[ -f $1 ]] || return 1
+
+    for var in {SRC,SRCPKG,PKG,LOG}DEST MAKEFLAGS PACKAGER CARCH GPGKEY; do
+        [[ -z ${!var} ]] && eval $(grep -a "^${var}=" "$1")
+    done
+
+    return 0
+}
+
 get_timer(){
     echo $(date +%s)
 }
@@ -191,8 +206,10 @@ create_rootfs_pkg() {
     $LIBDIR/pacstrap -G -M -C $LIBDIR/pacman.conf.$ARCH $CHROOTDIR fakeroot-qemu base-devel
     echo "Server = $BUILDSERVER/arm-$BRANCH/\$repo/\$arch" > $CHROOTDIR/etc/pacman.d/mirrorlist
     sed -i s/"arm-$BRANCH"/"arm-stable"/g $LIBDIR/pacman.conf.$ARCH
+    if [[ $CARCH != "aarch64" ]]; then
     # Enable cross architecture Chrooting
     cp /usr/bin/qemu-aarch64-static $CHROOTDIR/usr/bin/
+    fi
 
     msg "Configuring rootfs for building..."
     $NSPAWN $CHROOTDIR pacman-key --init 1> /dev/null 2>&1
@@ -249,6 +266,11 @@ create_rootfs_img() {
     $NSPAWN $ROOTFS_IMG/rootfs_$ARCH pacman-key --init 1>/dev/null || abort
     $NSPAWN $ROOTFS_IMG/rootfs_$ARCH pacman-key --populate archlinux archlinuxarm manjaro manjaro-arm 1>/dev/null || abort
     
+    if [[ $MOBILE = true ]]; then
+        info "Adding repo [mobile] to rootfs"
+        sed -i 's/^\[core\]/\[mobile\]\nInclude = \/etc\/pacman.d\/mirrorlist\n\n\[core\]/' $ROOTFS_IMG/rootfs_$ARCH/etc/pacman.conf
+    fi
+
     info "Setting branch to $BRANCH..."
     echo "Server = $BUILDSERVER/arm-$BRANCH/\$repo/\$arch" > $ROOTFS_IMG/rootfs_$ARCH/etc/pacman.d/mirrorlist
     
@@ -311,7 +333,7 @@ create_rootfs_img() {
     rm -f $ROOTFS_IMG/rootfs_$ARCH/etc/ca-certificates/extracted/tls-ca-bundle.pem
     cp -a /etc/ssl/certs/ca-certificates.crt $ROOTFS_IMG/rootfs_$ARCH/etc/ssl/certs/
     cp -a /etc/ca-certificates/extracted/tls-ca-bundle.pem $ROOTFS_IMG/rootfs_$ARCH/etc/ca-certificates/extracted/
-    echo "manjaro-arm" | tee --append $ROOTFS_IMG/rootfs_$ARCH/etc/hostname 1> /dev/null 2>&1
+    echo "$HOSTNAME" | tee --append $ROOTFS_IMG/rootfs_$ARCH/etc/hostname 1> /dev/null 2>&1
     case "$EDITION" in
         cubocore|plasma-mobile|plasma-mobile-dev)
             echo "No OEM setup!"
@@ -319,7 +341,7 @@ create_rootfs_img() {
         phosh|lomiri)
             echo "Configure autologin for user 'manjaro'"
             $NSPAWN $ROOTFS_IMG/rootfs_$ARCH groupadd -r autologin
-            $NSPAWN $ROOTFS_IMG/rootfs_$ARCH gpasswd -a manjaro autologin
+            $NSPAWN $ROOTFS_IMG/rootfs_$ARCH gpasswd -a "$USER" autologin
             ;;
         *)
             echo "Enabling SSH login for root user for headless setup..."
@@ -387,6 +409,30 @@ create_rootfs_img() {
     else
         echo "$DEVICE - $EDITION - $VERSION" | tee --append $ROOTFS_IMG/rootfs_$ARCH/etc/manjaro-arm-version 1> /dev/null 2>&1
     fi
+ 
+    # Lomiri services Temporary in function until it is moved to an individual package.
+    if [[ "$EDITION" = "lomiri" ]]; then
+    # Enable Autologin
+    $NSPAWN $ROOTFS_IMG/rootfs_$ARCH groupadd -r autologin
+    $NSPAWN $ROOTFS_IMG/rootfs_$ARCH gpasswd -a "$USER" autologin
+    # fix indicators
+   $NSPAWN $ROOTFS_IMG/rootfs_$ARCH mkdir /usr/lib/systemd/user/ayatana-indicators.target.wants
+   $NSPAWN $ROOTFS_IMG/rootfs_$ARCH ln -sfv /usr/lib/systemd/user/ayatana-indicator-datetime.service /usr/lib/systemd/user/ayatana-indicators.target.wants/ayatana-indicator-datetime.service
+   $NSPAWN $ROOTFS_IMG/rootfs_$ARCH ln -sfv /usr/lib/systemd/user/ayatana-indicator-display.service /usr/lib/systemd/user/ayatana-indicators.target.wants/ayatana-indicator-display.service
+   $NSPAWN $ROOTFS_IMG/rootfs_$ARCH ln -sfv /usr/lib/systemd/user/ayatana-indicator-messages.service /usr/lib/systemd/user/ayatana-indicators.target.wants/ayatana-indicator-messages.service
+   $NSPAWN $ROOTFS_IMG/rootfs_$ARCH ln -sfv /usr/lib/systemd/user/ayatana-indicator-power.service /usr/lib/systemd/user/ayatana-indicators.target.wants/ayatana-indicator-power.service
+   $NSPAWN $ROOTFS_IMG/rootfs_$ARCH ln -sfv /usr/lib/systemd/user/ayatana-indicator-session.service /usr/lib/systemd/user/ayatana-indicators.target.wants/ayatana-indicator-session.service
+   $NSPAWN $ROOTFS_IMG/rootfs_$ARCH ln -sfv /usr/lib/systemd/user/ayatana-indicator-sound.service /usr/lib/systemd/user/ayatana-indicators.target.wants/ayatana-indicator-sound.service
+   $NSPAWN $ROOTFS_IMG/rootfs_$ARCH ln -sfv /usr/lib/systemd/user/indicator-network.service /usr/lib/systemd/user/ayatana-indicators.target.wants/indicator-network.service
+   # Fix background
+   $NSPAWN $ROOTFS_IMG/rootfs_$ARCH mkdir /usr/share/backgrounds
+   sudo cp /home/spikerguy/Downloads/manjaro.png $ROOTFS_IMG/rootfs_$ARCH/usr/share/wallpapers/
+   $NSPAWN $ROOTFS_IMG/rootfs_$ARCH ln -s /usr/share/wallpapers/manjaro.png /usr/share/backgrounds/warty-final-ubuntu.png
+   #Fix Maliit
+   $NSPAWN $ROOTFS_IMG/rootfs_$ARCH mkdir /usr/lib/systemd/user/graphical-session.target.wants
+    $NSPAWN $ROOTFS_IMG/rootfs_$ARCH ln -s /usr/lib/systemd/user/maliit-server.service /usr/lib/systemd/user/graphical-session.target.wants/maliit-server.service
+   fi
+### Lomiri Temporary service ends here
 
     msg "Creating package list: [$IMGDIR/$IMGNAME-pkgs.txt]"
     pacman -Qr "$ROOTFS_IMG/rootfs_$ARCH/" > "$IMGDIR/$IMGNAME-pkgs.txt" 2>/dev/null
@@ -434,7 +480,7 @@ create_emmc_install() {
     
     info "Setting up system settings..."
     # setting hostname
-    echo "manjaro-arm" | tee --append $ROOTFS_IMG/rootfs_$ARCH/etc/hostname 1> /dev/null 2>&1
+    echo "$HOSTNAME" | tee --append $ROOTFS_IMG/rootfs_$ARCH/etc/hostname 1> /dev/null 2>&1
     # enable autologin
     mv $CHROOTDIR/usr/lib/systemd/system/getty\@.service $CHROOTDIR/usr/lib/systemd/system/getty\@.service.bak
     cp $LIBDIR/getty\@.service $CHROOTDIR/usr/lib/systemd/system/getty\@.service
@@ -517,7 +563,7 @@ create_img() {
         on2|on2-plus|oc4)
             dd if=$TMPDIR/boot/u-boot.bin of=${LDEV} conv=fsync,notrunc bs=512 seek=1 1> /dev/null 2>&1
             ;;
-        vim1|vim2|vim3)
+        vim1|vim2|vim3|gtking-pro|gsking-x)
             dd if=$TMPDIR/boot/$DEVICE.u-boot.bin of=${LDEV} conv=fsync,notrunc bs=442 count=1 1> /dev/null 2>&1
             dd if=$TMPDIR/boot/$DEVICE.u-boot.bin of=${LDEV} conv=fsync,notrunc bs=512 skip=1 seek=1 1> /dev/null 2>&1
             ;;
@@ -530,7 +576,7 @@ create_img() {
             dd if=$TMPDIR/boot/u-boot-sunxi-with-spl-$DEVICE.bin of=${LDEV} conv=fsync bs=8k seek=1 1> /dev/null 2>&1
             ;;
         # Rockchip uboots
-        pbpro|rockpro64|rockpi4b|rockpi4c|nanopc-t4|rock64|roc-cc)
+        pbpro|rockpro64|rockpi4b|rockpi4c|nanopc-t4|rock64|roc-cc|stationp1)
             dd if=$TMPDIR/boot/idbloader.img of=${LDEV} seek=64 conv=notrunc,fsync 1> /dev/null 2>&1
             dd if=$TMPDIR/boot/u-boot.itb of=${LDEV} seek=16384 conv=notrunc,fsync 1> /dev/null 2>&1
             ;;
