@@ -24,6 +24,7 @@ USER='manjaro'
 HOSTNAME='manjaro-arm'
 PASSWORD='manjaro'
 CARCH=$(uname -m)
+COLORS=true
 srv_list=/tmp/services_list
 
 #import conf file
@@ -70,6 +71,7 @@ usage_build_img() {
     echo "    -m                 Create bmap. ('bmap-tools' need to be installed.)"
     echo "    -n                 Force download of new rootfs."
     echo "    -x                 Don't compress the image."
+    echo "    -c                 Disable colors."
     echo '    -h                 This help'
     echo ''
     echo ''
@@ -94,24 +96,26 @@ usage_build_emmcflasher() {
 usage_getarmprofiles() {
     echo "Usage: ${0##*/} [options]"
     echo '    -f                 Force download of current profiles from the git repository'
+    echo '    -p                 Use profiles from pp-factory branch'
     echo '    -h                 This help'
     echo ''
     echo ''
     exit $1
 }
 
-msg() {
+enable_colors() {
     ALL_OFF="\e[1;0m"
     BOLD="\e[1;1m"
     GREEN="${BOLD}\e[1;32m"
+    BLUE="${BOLD}\e[1;34m"
+}
+
+msg() {
     local mesg=$1; shift
     printf "${GREEN}==>${ALL_OFF}${BOLD} ${mesg}${ALL_OFF}\n" "$@" >&2
  }
  
 info() {
-    ALL_OFF="\e[1;0m"
-    BOLD="\e[1;1m"
-    BLUE="${BOLD}\e[1;34m"
     local mesg=$1; shift
     printf "${BLUE}  ->${ALL_OFF}${BOLD} ${mesg}${ALL_OFF}\n" "$@" >&2
  }
@@ -165,7 +169,7 @@ show_elapsed_time(){
 create_torrent() {
     info "Creating torrent of $IMAGE..."
     cd $IMGDIR/
-    mktorrent -v -a udp://tracker.opentrackr.org:1337 -w https://osdn.net/projects/manjaro-arm/storage/$DEVICE/$EDITION/$VERSION/$IMAGE -o $IMAGE.torrent $IMAGE
+    mktorrent -v -a udp://tracker.opentrackr.org:1337 -w https://osdn.net/dl/manjaro-arm/$IMAGE -o $IMAGE.torrent $IMAGE
 }
 
 checksum_img() {
@@ -299,7 +303,7 @@ create_rootfs_img() {
 
     while read service; do
         if [ -e $ROOTFS_IMG/rootfs_$ARCH/usr/lib/systemd/system/$service ]; then
-            info "Enabling $service ..."
+            echo "Enabling $service ..."
             $NSPAWN $ROOTFS_IMG/rootfs_$ARCH systemctl enable $service 1>/dev/null
         else
             echo "$service not found in rootfs. Skipping."
@@ -307,22 +311,24 @@ create_rootfs_img() {
     done < $srv_list
     
     #disabling services depending on edition
-    case "$EDITION" in
-        mate|i3|xfce|lxqt)
-            $NSPAWN $ROOTFS_IMG/rootfs_$ARCH systemctl disable lightdm.service
-            $NSPAWN $ROOTFS_IMG/rootfs_$ARCH usermod --expiredate= lightdm
-            ;;
-        sway)
-            $NSPAWN $ROOTFS_IMG/rootfs_$ARCH systemctl disable greetd.service
-            ;;
-        minimal|server|plasma-mobile|plasma-mobile-dev|phosh|cubocore|lomiri)
-            echo "No display manager to disable in $EDITION..."
-            ;;
-        *)
-            $NSPAWN $ROOTFS_IMG/rootfs_$ARCH systemctl disable sddm.service
-            $NSPAWN $ROOTFS_IMG/rootfs_$ARCH usermod --expiredate= sddm
-            ;;
-    esac
+    if [ -f $ROOTFS_IMG/rootfs_$ARCH/usr/lib/systemd/system/lightdm.service ]; then
+        $NSPAWN $ROOTFS_IMG/rootfs_$ARCH systemctl disable lightdm.service 1> /dev/null 2>&1
+        $NSPAWN $ROOTFS_IMG/rootfs_$ARCH usermod --expiredate= lightdm 1> /dev/null 2>&1
+        echo "Disabled lightdm for OEM setup..."
+        elif [ -f $ROOTFS_IMG/rootfs_$ARCH/usr/lib/systemd/system/greetd.service ]; then
+            $NSPAWN $ROOTFS_IMG/rootfs_$ARCH systemctl disable greetd.service 1> /dev/null 2>&1
+            echo "Disabled greetd for OEM setup..."
+        elif [ -f $ROOTFS_IMG/rootfs_$ARCH/usr/lib/systemd/system/sddm.service ]; then
+            $NSPAWN $ROOTFS_IMG/rootfs_$ARCH systemctl disable sddm.service 1> /dev/null 2>&1
+            $NSPAWN $ROOTFS_IMG/rootfs_$ARCH usermod --expiredate= sddm 1> /dev/null 2>&1
+            echo "Disabled sddm for OEM setup..."
+        elif [ -f $ROOTFS_IMG/rootfs_$ARCH/usr/lib/systemd/system/gdm.service ]; then
+            $NSPAWN $ROOTFS_IMG/rootfs_$ARCH systemctl disable gdm.service 1> /dev/null 2>&1
+            $NSPAWN $ROOTFS_IMG/rootfs_$ARCH usermod --expiredate= gdm 1> /dev/null 2>&1
+            echo "Disabled gdm for OEM setup..."
+    else
+        echo "No display manager to disable in $EDITION..."
+    fi
 
     info "Applying overlay for $EDITION edition..."
     cp -ap $PROFILES/arm-profiles/overlays/$EDITION/* $ROOTFS_IMG/rootfs_$ARCH/
@@ -668,12 +674,23 @@ export_and_clean() {
     fi
 }
 
+clone_profiles() {
+    cd $PROFILES
+    git clone --branch $1 https://gitlab.manjaro.org/manjaro-arm/applications/arm-profiles.git
+}
+
 get_profiles() {
+    local branch=master
+    [[ "$FACTORY" = "true" ]] && branch=pp-factory
     if ls $PROFILES/arm-profiles/* 1> /dev/null 2>&1; then
-        cd $PROFILES/arm-profiles
-        git pull
+        if [[ $(grep branch $PROFILES/arm-profiles/.git/config | cut -d\" -f2) = "$branch" ]]; then
+            cd $PROFILES/arm-profiles
+            git pull
+        else
+            rm -rf $PROFILES/arm-profiles/
+            clone_profiles $branch
+        fi
     else
-        cd $PROFILES
-        git clone https://gitlab.manjaro.org/manjaro-arm/applications/arm-profiles.git
+        clone_profiles $branch
     fi
 }
