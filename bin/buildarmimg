@@ -44,6 +44,19 @@ while getopts "${opt}" arg; do
       ;;
     i)
       ADD_PACKAGE="${OPTARG}"
+      readarray -td, packages <<<$ADD_PACKAGE; declare -p packages;
+      
+      # Check if file exists
+      for package in "${packages[@]}"
+      do 
+	      packageToAdd="$package"
+	      if [ -f $packageToAdd ]; then
+		      echo "Found: $packageToAdd"
+	      else
+		      echo "Can't find such file: $packageToAdd"
+          exit 1
+	      fi
+      done
       ;;
     b)
       BRANCH="${OPTARG}"

@@ -320,8 +320,46 @@ create_rootfs_img() {
 
     if [[ ! -z "$ADD_PACKAGE" ]]; then
         info "Installing local package {$ADD_PACKAGE} to rootfs..."
-        cp -ap $ADD_PACKAGE $PKG_CACHE/
-        $NSPAWN $ROOTFS_IMG/rootfs_$ARCH pacman -U /var/cache/pacman/pkg/$ADD_PACKAGE --noconfirm || abort
+        
+        readarray -td, packages <<<$ADD_PACKAGE; declare -p packages;
+        
+        declare -a finalPackages=()
+        i=0
+
+        for package in "${packages[@]}"
+        do
+        	packageToAdd="$package"
+
+                # Simplistic path manipulation	
+        	if [[ $packageToAdd == *"/"* ]]; then
+        		packageToAdd="$packageToAdd"
+        	else
+        		packageToAdd="$PWD/$packageToAdd" 
+        	fi
+
+        	# Add the file path to the final array
+        	if [ -f $packageToAdd ]; then 
+        		finalPackages[$i]=$packageToAdd
+        		((++i))
+               	else 
+        	        echo "Can't find such file: $packageToAdd" 
+        		# TODO: Abort after the warning
+        	fi
+        done
+
+        listForPacman=""
+
+        # List all packages to add
+        echo -e "\nList of packages to add:"
+
+        for package in "${finalPackages[@]}"
+        do
+            echo "${package}"
+            cp -ap $package $PKG_CACHE/
+            listForPacman+="/var/cache/pacman/pkg/${package##*/} "
+        done
+
+        $NSPAWN $ROOTFS_IMG/rootfs_$ARCH pacman -U $listForPacman --noconfirm || abort
     fi
     info "Generating mirrorlist..."
     $NSPAWN $ROOTFS_IMG/rootfs_$ARCH pacman-mirrors --protocols https --method random --api --set-branch $BRANCH 1> /dev/null 2>&1
