@@ -900,7 +900,9 @@ compress() {
     chmod 666 $IMGDIR/$IMGNAME.img.xz
 
     info "Removing rootfs_$ARCH"
-    umount $ROOTFS_IMG/rootfs_$ARCH/var/cache/pacman/pkg
+    mount | grep "$ROOTFS_IMG/rootfs_$ARCH/var/cache/pacman/pkg" 1> /dev/null 2>&1
+    STATUS=$?
+    [ $STATUS -eq 0 ] && umount $ROOTFS_IMG/rootfs_$ARCH/var/cache/pacman/pkg
     rm -rf $CHROOTDIR
 }
 
