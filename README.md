@@ -20,6 +20,7 @@ These scripts rely on certain packages, other than what's in the `base` package 
 * polkit (arch repo)
 * gnugpg (arch repo)
 * wget (arch repo)
+* zstd (arch repo) - unzstd used for package verification
 * systemd-nspawn with support for `--resolv-conf=copy-host` (arch repo)
 
 ### Optional Dependencies
@@ -57,6 +58,11 @@ Options inside `[` `]` are optional. Use `-h` to see what the defaults are.
 
 ```
 sudo buildarmpkg -p package [-a architecture] [-k] [-i package file] [-b branch]
+```
+
+To use several local packages, use the `,` separator (no spaces between the package names and the comma):
+```
+sudo buildarmpkg -p package [-a architecture] [-k] [-i package-file-1,package-file-2] [-b branch]
 ```
 
 To build an aarch64 package against arm-unstable branch use the following command:
@@ -158,6 +164,12 @@ To build an lxqt version with a local package installed for the rock64:
 
 ```
 sudo buildarmimg -d rock64 -e lxqt -i package-name-1.0-1-aarch64.pkg.tar.xz
+```
+
+To build a xfce version with multiple local packages installed for the rock64 use `,` separator (no empty space between the file names):
+
+```
+sudo buildarmimg -d rock64 -e xfce -i package-name-1.0-1-aarch64.pkg.tar.xz,second-package-name-1.0-1-aarch64.pkg.tar.xz
 ```
 
 To build a kde-plasma edition for the Pinebook Pro with btrfs filesystem:

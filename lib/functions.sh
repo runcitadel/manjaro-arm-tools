@@ -319,48 +319,15 @@ create_rootfs_img() {
     esac
 
     if [[ ! -z "$ADD_PACKAGE" ]]; then
-        info "Installing local package {$ADD_PACKAGE} to rootfs..."
-        
-        readarray -td, packages <<<$ADD_PACKAGE; declare -p packages;
-        
-        declare -a finalPackages=()
-        i=0
-
-        for package in "${packages[@]}"
-        do
-        	packageToAdd="$package"
-
-                # Simplistic path manipulation	
-        	if [[ $packageToAdd == *"/"* ]]; then
-        		packageToAdd="$packageToAdd"
-        	else
-        		packageToAdd="$PWD/$packageToAdd" 
-        	fi
-
-        	# Add the file path to the final array
-        	if [ -f $packageToAdd ]; then 
-        		finalPackages[$i]=$packageToAdd
-        		((++i))
-               	else 
-        	        echo "Can't find such file: $packageToAdd" 
-        		# TODO: Abort after the warning
-        	fi
-        done
-
-        listForPacman=""
-
-        # List all packages to add
-        echo -e "\nList of packages to add:"
-
-        for package in "${finalPackages[@]}"
-        do
-            echo "${package}"
-            cp -ap $package $PKG_CACHE/
-            listForPacman+="/var/cache/pacman/pkg/${package##*/} "
-        done
-
+        installLocalPackage
+        # The list of packages is generated in installLocalPackage()
         $NSPAWN $ROOTFS_IMG/rootfs_$ARCH pacman -U $listForPacman --noconfirm || abort
+        if [[ $? != 0 ]]; then
+            echo -e "ERROR:\nThere was a problem with installing the local package/s.\nPlease,check the logs."
+            exit 1 # TODO: Verify that the exit will be clean
+        fi
     fi
+
     info "Generating mirrorlist..."
     $NSPAWN $ROOTFS_IMG/rootfs_$ARCH pacman-mirrors --protocols https --method random --api --set-branch $BRANCH 1> /dev/null 2>&1
     
@@ -947,9 +914,13 @@ compress() {
 build_pkg() {
     # Install local package to rootfs before building
     if [[ ! -z "$ADD_PACKAGE" ]]; then
-        info "Installing local package {$ADD_PACKAGE} to rootfs..."
-        cp -ap $ADD_PACKAGE $PKG_CACHE
-        $NSPAWN $CHROOTDIR pacman -U /var/cache/pacman/pkg/$ADD_PACKAGE --noconfirm
+        installLocalPackage
+        # The list of packages is generated in installLocalPackage()
+        $NSPAWN $CHROOTDIR pacman -U $listForPacman --noconfirm
+        if [[ $? != 0 ]]; then
+            echo -e "ERROR:\nThere was a problem with installing the local package/s.\nPlease,check the logs."
+            exit 1 # TODO: Verify that the exit will be clean
+        fi
     fi
     # Build the actual package
     msg "Copying build directory {$PACKAGE} to rootfs..."
@@ -1006,4 +977,94 @@ get_profiles() {
     else
         clone_profiles $branch
     fi
+}
+
+verifyLocalPackage() {
+    readarray -td, packages <<<$ADD_PACKAGE; declare -p packages; > /dev/null 2>&1
+      
+    # Check if file exists
+    for package in "${packages[@]}"
+    do 
+        packageToAdd="$package"
+        if [ -f $packageToAdd ]; then
+            echo "File found: $packageToAdd"
+
+        # Test if it is a tar archive
+        tar tf ${packageToAdd//[$'\n']} > /dev/null 2>&1
+        if [[ $? != 0 ]]; then
+        echo "$packageToAdd is not a valid tar archive"
+        exit 1
+        fi
+
+        # Check if the tar contains .BUILDINFO and architecture
+        # Temp file to extract
+        tar --use-compress-program=unzstd -xf "${packageToAdd//[$'\n']}" ".BUILDINFO" > /dev/null 2>&1
+        if [[ $? != 0 ]]; then
+        echo -e "ERROR:\n${packageToAdd//[$'\n']} is NOT a valid package\nNo .BUILDINFO found"
+        exit 1
+        fi 
+        
+        verifyPackageArch=$(grep "pkgarch" $PWD/.BUILDINFO | head -1)
+        
+        if [ -f "$PWD/.BUILDINFO" ]; then
+        if [[ $verifyPackageArch == *"aarch64"* || $verifyPackageArch == *"any"* ]]; then
+            echo "${packageToAdd//[$'\n']} is compatible with aarch64"
+        else
+            echo -e "ERROR:\n${packageToAdd//[$'\n']} - NOT compatible with aarch64"
+            rm "$PWD/.BUILDINFO"
+            exit 1
+        fi
+        # Cleanup
+        rm "$PWD/.BUILDINFO"
+        else
+        echo -e "ERROR:\n${packageToAdd//[$'\n']} - couldn't find the local copy .BUILDINFO file"
+        exit 1
+        fi   
+        else
+            echo -e "ERROR:\nCan't find such file: ${packageToAdd//[$'\n']}"
+        exit 1
+        fi
+    done
+}
+
+installLocalPackage() {
+    info "Installing local package {$ADD_PACKAGE} to rootfs..."
+        
+        readarray -td, packages <<<$ADD_PACKAGE; declare -p packages; > /dev/null 2>&1
+        
+        declare -a finalPackages=()
+        i=0
+
+        for package in "${packages[@]}"
+        do
+        	packageToAdd="$package"
+
+            # Simplistic path manipulation	
+        	if [[ $packageToAdd == *"/"* ]]; then
+        		packageToAdd="$packageToAdd"
+        	else
+        		packageToAdd="$PWD/$packageToAdd" 
+        	fi
+
+        	# Add the file path to the final array
+        	if [ -f $packageToAdd ]; then 
+        		finalPackages[$i]=$packageToAdd
+        		((++i))
+            else 
+        	    echo -e "ERROR:\nCan't find such file: ${packageToAdd//[$'\n']}" 
+        		exit 1
+        	fi
+        done
+
+        listForPacman=""
+
+        # List all packages to add
+        echo -e "\nList of packages to add:"
+
+        for package in "${finalPackages[@]}"
+        do
+            echo "${package//[$'\n']}"
+            cp -ap $package $PKG_CACHE/
+            listForPacman+="/var/cache/pacman/pkg/${package##*/} "
+        done
 }

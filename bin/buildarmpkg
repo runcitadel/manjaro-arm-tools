@@ -35,6 +35,7 @@ while getopts "${opt}" arg; do
       ;;
     i)
       ADD_PACKAGE="${OPTARG}"
+      verifyLocalPackage
       ;;
     n)
       INSTALL_NEW=true
