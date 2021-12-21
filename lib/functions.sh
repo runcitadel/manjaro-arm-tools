@@ -989,40 +989,40 @@ verifyLocalPackage() {
         if [ -f $packageToAdd ]; then
             echo "File found: $packageToAdd"
 
-        # Test if it is a tar archive
-        tar tf ${packageToAdd//[$'\n']} > /dev/null 2>&1
-        if [[ $? != 0 ]]; then
-        echo "$packageToAdd is not a valid tar archive"
-        exit 1
-        fi
+            # Test if it is a tar archive
+            tar tf ${packageToAdd//[$'\n']} > /dev/null 2>&1
+            if [[ $? != 0 ]]; then
+                echo "$packageToAdd is not a valid tar archive"
+                exit 1
+            fi
 
-        # Check if the tar contains .BUILDINFO and architecture
-        # Temp file to extract
-        tar --use-compress-program=unzstd -xf "${packageToAdd//[$'\n']}" ".BUILDINFO" > /dev/null 2>&1
-        if [[ $? != 0 ]]; then
-        echo -e "ERROR:\n${packageToAdd//[$'\n']} is NOT a valid package\nNo .BUILDINFO found"
-        exit 1
-        fi 
-        
-        verifyPackageArch=$(grep "pkgarch" $PWD/.BUILDINFO | head -1)
-        
-        if [ -f "$PWD/.BUILDINFO" ]; then
-        if [[ $verifyPackageArch == *"aarch64"* || $verifyPackageArch == *"any"* ]]; then
-            echo "${packageToAdd//[$'\n']} is compatible with aarch64"
-        else
-            echo -e "ERROR:\n${packageToAdd//[$'\n']} - NOT compatible with aarch64"
-            rm "$PWD/.BUILDINFO"
-            exit 1
-        fi
-        # Cleanup
-        rm "$PWD/.BUILDINFO"
-        else
-        echo -e "ERROR:\n${packageToAdd//[$'\n']} - couldn't find the local copy .BUILDINFO file"
-        exit 1
-        fi   
+            # Check if the tar contains .BUILDINFO and architecture
+            # Temp file to extract
+            tar --use-compress-program=unzstd -xf "${packageToAdd//[$'\n']}" ".BUILDINFO" > /dev/null 2>&1
+            if [[ $? != 0 ]]; then
+                echo -e "ERROR:\n${packageToAdd//[$'\n']} is NOT a valid package\nNo .BUILDINFO found"
+                exit 1
+            fi 
+
+            verifyPackageArch=$(grep "pkgarch" $PWD/.BUILDINFO | head -1)
+
+            if [ -f "$PWD/.BUILDINFO" ]; then
+                if [[ $verifyPackageArch == *"aarch64"* || $verifyPackageArch == *"any"* ]]; then
+                    echo "${packageToAdd//[$'\n']} is compatible with aarch64"
+                else
+                    echo -e "ERROR:\n${packageToAdd//[$'\n']} - NOT compatible with aarch64"
+                    rm "$PWD/.BUILDINFO"
+                    exit 1
+                fi
+                # Cleanup
+                rm "$PWD/.BUILDINFO"
+            else
+                echo -e "ERROR:\n${packageToAdd//[$'\n']} - couldn't find the local copy .BUILDINFO file"
+                exit 1
+            fi   
         else
             echo -e "ERROR:\nCan't find such file: ${packageToAdd//[$'\n']}"
-        exit 1
+            exit 1
         fi
     done
 }
