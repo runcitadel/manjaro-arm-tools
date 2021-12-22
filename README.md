@@ -20,7 +20,7 @@ These scripts rely on certain packages, other than what's in the `base` package 
 * polkit (arch repo)
 * gnugpg (arch repo)
 * wget (arch repo)
-* zstd (arch repo) - unzstd used for package verification
+* zstd (arch repo) - unzstd used for early package verification
 * systemd-nspawn with support for `--resolv-conf=copy-host` (arch repo)
 
 ### Optional Dependencies
