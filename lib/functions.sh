@@ -314,7 +314,11 @@ create_rootfs_img() {
             $NSPAWN $ROOTFS_IMG/rootfs_$ARCH pacman -Syyu base systemd systemd-libs dialog manjaro-arm-oem-install manjaro-system manjaro-release $PKG_EDITION $PKG_DEVICE --noconfirm || abort
             ;;
         *)
-            $NSPAWN $ROOTFS_IMG/rootfs_$ARCH pacman -Syyu base systemd systemd-libs calamares-arm-oem manjaro-system manjaro-release $PKG_EDITION $PKG_DEVICE --noconfirm || abort
+            if [[ "$DEVICE" = "clockworkpi-a06" ]]; then # This device does not support Calamares, because of the low pixel height of the display (480)
+                $NSPAWN $ROOTFS_IMG/rootfs_$ARCH pacman -Syyu base systemd systemd-libs dialog manjaro-arm-oem-install manjaro-system manjaro-release $PKG_EDITION $PKG_DEVICE --noconfirm || abort
+            else
+                $NSPAWN $ROOTFS_IMG/rootfs_$ARCH pacman -Syyu base systemd systemd-libs calamares-arm-oem manjaro-system manjaro-release $PKG_EDITION $PKG_DEVICE --noconfirm || abort
+            fi
             ;;
     esac
 
@@ -376,6 +380,23 @@ create_rootfs_img() {
             cp $LIBDIR/getty\@.service $ROOTFS_IMG/rootfs_$ARCH/usr/lib/systemd/system/getty\@.service
             ;;
     esac
+    if [[ "$DEVICE" = "clockworkpi-a06" ]]; then # device does not support Calamares because of low screen resolution, so enable TUI OEM setup on it
+        echo "Enabling SSH login for root user for headless setup..."
+        sed -i s/"#PermitRootLogin prohibit-password"/"PermitRootLogin yes"/g $ROOTFS_IMG/rootfs_$ARCH/etc/ssh/sshd_config
+        sed -i s/"#PermitEmptyPasswords no"/"PermitEmptyPasswords yes"/g $ROOTFS_IMG/rootfs_$ARCH/etc/ssh/sshd_config
+        echo "Enabling autologin for first setup..."
+        mv $ROOTFS_IMG/rootfs_$ARCH/usr/lib/systemd/system/getty\@.service $ROOTFS_IMG/rootfs_$ARCH/usr/lib/systemd/system/getty\@.service.bak
+        cp $LIBDIR/getty\@.service $ROOTFS_IMG/rootfs_$ARCH/usr/lib/systemd/system/getty\@.service
+        if [ -e $ROOTFS_IMG/rootfs_$ARCH/usr/bin/lightdm ]; then
+            $NSPAWN $ROOTFS_IMG/rootfs_$ARCH systemctl disable lightdm.service 1> /dev/null 2>&1
+        elif [ -e $ROOTFS_IMG/rootfs_$ARCH/usr/bin/sddm ]; then
+            $NSPAWN $ROOTFS_IMG/rootfs_$ARCH systemctl disable sddm.service 1> /dev/null 2>&1
+        elif [ -e $ROOTFS_IMG/rootfs_$ARCH/usr/bin/gdm ]; then
+            $NSPAWN $ROOTFS_IMG/rootfs_$ARCH systemctl disable gdm.service 1> /dev/null 2>&1
+        elif [ -e $ROOTFS_IMG/rootfs_$ARCH/usr/bin/greetd ]; then
+            $NSPAWN $ROOTFS_IMG/rootfs_$ARCH systemctl disable greetd.service 1> /dev/null 2>&1
+        fi
+    fi
     
     # Create OEM user
     if [ -d $ROOTFS_IMG/rootfs_$ARCH/usr/share/calamares ]; then
