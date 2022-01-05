@@ -16,6 +16,14 @@ if [ "$EUID" -ne 0 ]
   exit
 fi
 
+# check if script is already running
+for pid in $(pidof -x buildarmpkg); do
+    if [ $pid != $$ ]; then
+        echo "[$(date)] : buildarmpkg : Process is already running with PID $pid"
+        exit 1
+    fi
+done
+
 #Arguments 
 opt=":p:a:i:r:nb:kh"
 
