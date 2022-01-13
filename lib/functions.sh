@@ -307,7 +307,7 @@ create_rootfs_img() {
     # Install device and editions specific packages
     mount -o bind $PKGDIR/pkg-cache $PKG_CACHE
     case "$EDITION" in
-        cubocore|phosh|plasma-mobile|plasma-mobile-dev|kde-bigscreen)
+        cubocore|phosh|plasma-mobile|plasma-mobile-dev|kde-bigscreen|maui-shell)
             $NSPAWN $ROOTFS_IMG/rootfs_$ARCH pacman -Syyu base systemd systemd-libs manjaro-system manjaro-release $PKG_EDITION $PKG_DEVICE --noconfirm || abort
             ;;
         minimal|server)
@@ -360,7 +360,7 @@ create_rootfs_img() {
     $NSPAWN $ROOTFS_IMG/rootfs_$ARCH update-ca-trust
     echo "$HOSTNAME" | tee --append $ROOTFS_IMG/rootfs_$ARCH/etc/hostname 1> /dev/null 2>&1
     case "$EDITION" in
-        cubocore|plasma-mobile|plasma-mobile-dev|kde-bigscreen)
+        cubocore|plasma-mobile|plasma-mobile-dev|kde-bigscreen|maui-shell)
             echo "No OEM setup!"
             # Lock root user
             $NSPAWN $ROOTFS_IMG/rootfs_$ARCH passwd --lock root
