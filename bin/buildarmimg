@@ -14,18 +14,10 @@ CHROOTDIR=$ROOTFS_IMG/rootfs_$ARCH
 PKG_CACHE=$CHROOTDIR/var/cache/pacman/pkg
 
 # check if root
-if [ "$EUID" -ne 0 ]
-  then echo "This script requires root permissions to run. Please run as root or with sudo!"
-  exit
-fi
+checkroot
 
 # check if script is already running
-for pid in $(pidof -x buildarmimg); do
-    if [ $pid != $$ ]; then
-        echo "[$(date)] : buildarmimg : Process is already running with PID $pid"
-        exit 1
-    fi
-done
+checkrunning
 
 #Arguments 
 opt=":e:d:v:i:b:nfxhk:mos:p:c"
@@ -103,10 +95,7 @@ if [ ! -d "$PROFILES/arm-profiles" ]; then
 fi
 
 #Make sure only a known branch is used
-if [[ "$BRANCH" != "stable" && "$BRANCH" != "testing" && "$BRANCH" != "unstable" ]]; then
-    msg "Unknown branch. Please use either, stable, testing or unstable!"
-    exit 1
-fi
+checkbranch
 
 # start the timer
 timer_start=$(get_timer)

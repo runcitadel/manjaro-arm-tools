@@ -28,6 +28,8 @@ COLORS=true
 FILESYSTEM='ext4'
 srv_list=/tmp/services_list
 
+PROGNAME=${0##*/}
+
 #import conf file
 source /etc/manjaro-arm-tools/manjaro-arm-tools.conf 
 
@@ -178,6 +180,29 @@ create_torrent() {
     info "Creating torrent of $IMAGE..."
     cd $IMGDIR/
     mktorrent -v -a udp://tracker.opentrackr.org:1337 -w https://osdn.net/dl/manjaro-arm/$IMAGE -o $IMAGE.torrent $IMAGE
+}
+
+checkroot () {
+    if [ "$EUID" -ne 0 ]
+    then echo "This script requires root permissions to run. Please run as root or with sudo!"
+	 exit
+    fi
+}
+
+checkbranch () {
+    if [[ "$BRANCH" != "stable" && "$BRANCH" != "testing" && "$BRANCH" != "unstable" ]]; then
+	msg "Unknown branch. Please use either, stable, testing or unstable!"
+	exit 1
+    fi
+}
+
+checkrunning() {
+    for pid in $(pidof -x $PROGNAME); do
+    if [ $pid != $$ ]; then
+        echo "[$(date)] : $PROGNAME : Process is already running with PID $pid"
+        exit 1
+    fi
+    done
 }
 
 checksum_img() {

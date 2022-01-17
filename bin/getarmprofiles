@@ -4,10 +4,7 @@ LIBDIR=/usr/share/manjaro-arm-tools/lib
 source $LIBDIR/functions.sh
 
 # check if root
-if [ "$EUID" -ne 0 ]
-  then echo "This script requires root permissions to run. Please run as root or with sudo!"
-  exit
-fi
+checkroot
 
 #Arguments 
 opt="fhp"

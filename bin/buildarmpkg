@@ -11,18 +11,10 @@ CHROOTDIR=$BUILDDIR/$ARCH
 PKG_CACHE=$CHROOTDIR/var/cache/pacman/pkg
 
 # check if root
-if [ "$EUID" -ne 0 ]
-  then echo "This script requires root permissions to run. Please run as root or with sudo!"
-  exit
-fi
+checkroot
 
 # check if script is already running
-for pid in $(pidof -x buildarmpkg); do
-    if [ $pid != $$ ]; then
-        echo "[$(date)] : buildarmpkg : Process is already running with PID $pid"
-        exit 1
-    fi
-done
+checkrunning
 
 #Arguments 
 opt=":p:a:i:r:nb:kh"
@@ -80,10 +72,8 @@ if [ $ARCH == "any" ]; then
 fi
 
 #Make sure only a known branch is used
-if [[ "$BRANCH" != "stable" && "$BRANCH" != "testing" && "$BRANCH" != "unstable" ]]; then
-    msg "Unknown branch. Please use either, stable, testing or unstable!"
-    exit 1
-fi
+checkbranch
+
 # start the timer
 timer_start=$(get_timer)
    
