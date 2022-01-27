@@ -362,16 +362,17 @@ create_rootfs_img() {
     
     info "Enabling services..."
     # Enable services
-    $NSPAWN $ROOTFS_IMG/rootfs_$ARCH systemctl enable getty.target pacman-init.service 1>/dev/null
+    $NSPAWN $ROOTFS_IMG/rootfs_$ARCH systemctl enable getty.target 1> /dev/null 2>&1
+    $NSPAWN $ROOTFS_IMG/rootfs_$ARCH systemctl enable pacman-init.service 1> /dev/null 2>&1
     if [[ "$CUSTOM_REPO" = "kde-unstable" ]]; then
-        $NSPAWN $ROOTFS_IMG/rootfs_$ARCH systemctl enable sshd.service 1>/dev/null
+        $NSPAWN $ROOTFS_IMG/rootfs_$ARCH systemctl enable sshd.service 1> /dev/null 2>&1
     fi
 
 
     while read service; do
         if [ -e $ROOTFS_IMG/rootfs_$ARCH/usr/lib/systemd/system/$service ]; then
             echo "Enabling $service ..."
-            $NSPAWN $ROOTFS_IMG/rootfs_$ARCH systemctl enable $service 1>/dev/null
+            $NSPAWN $ROOTFS_IMG/rootfs_$ARCH systemctl enable $service 1> /dev/null 2>&1
         else
             echo "$service not found in rootfs. Skipping."
         fi
