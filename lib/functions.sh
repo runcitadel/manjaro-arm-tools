@@ -332,7 +332,7 @@ create_rootfs_img() {
     # Install device and editions specific packages
     mount -o bind $PKGDIR/pkg-cache $PKG_CACHE
     case "$EDITION" in
-        cubocore|phosh|plasma-mobile|plasma-mobile-dev|kde-bigscreen|maui-shell)
+        cubocore|phosh|plasma-mobile|plasma-mobile-dev|kde-bigscreen|maui-shell|nemomobile)
             $NSPAWN $ROOTFS_IMG/rootfs_$ARCH pacman -Syyu base systemd systemd-libs manjaro-system manjaro-release $PKG_EDITION $PKG_DEVICE --noconfirm || abort
             ;;
         minimal|server)
@@ -391,11 +391,16 @@ create_rootfs_img() {
             # Lock root user
             $NSPAWN $ROOTFS_IMG/rootfs_$ARCH passwd --lock root
             ;;
-        phosh|lomiri|nemomobile)
+        phosh|lomiri)
             $NSPAWN $ROOTFS_IMG/rootfs_$ARCH groupadd -r autologin
             $NSPAWN $ROOTFS_IMG/rootfs_$ARCH gpasswd -a "$USER" autologin
             # Lock root user
             $NSPAWN $ROOTFS_IMG/rootfs_$ARCH passwd --lock root
+            ;;
+        nemomobile)
+            echo "Create user manjaro for nemomobile..."
+            $NSPAWN $ROOTFS_IMG/rootfs_$ARCH groupadd -r autologin
+            $NSPAWN $ROOTFS_IMG/rootfs_$ARCH useradd -m -g users -G wheel,sys,audio,input,video,storage,lp,network,users,power,autologin -p $(openssl passwd -6 123456) -s /bin/bash manjaro
             ;;
         minimal|server)
             echo "Enabling SSH login for root user for headless setup..."
