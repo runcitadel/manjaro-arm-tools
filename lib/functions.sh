@@ -693,7 +693,7 @@ create_img() {
             dd if=/dev/zero of=${LDEV} bs=1M count=32 1> /dev/null 2>&1
             #partition with boot and root
             case "$DEVICE" in
-                oc2|on2|on2-plus|oc4|ohc4|vim1|vim2|vim3|radxa-zero|gtking-pro|gsking-x|edgev|rpi3|rpi4|pinephone)
+                oc2|on2|on2-plus|oc4|ohc4|vim1|vim2|vim3|radxa-zero|radxa-zero2|gtking-pro|gsking-x|edgev|rpi3|rpi4|pinephone)
                     parted -s $LDEV mklabel msdos 1> /dev/null 2>&1
                     ;;
                 quartz64-bsp)
@@ -767,7 +767,7 @@ create_img() {
             dd if=/dev/zero of=${LDEV} bs=1M count=32 1> /dev/null 2>&1
             #partition with boot and root
             case "$DEVICE" in
-                oc2|on2|on2-plus|oc4|ohc4|vim1|vim2|vim3|radxa-zero|gtking-pro|gsking-x|edgev|rpi3|rpi4|pinephone)
+                oc2|on2|on2-plus|oc4|ohc4|vim1|vim2|vim3|radxa-zero|radxa-zero2|gtking-pro|gsking-x|edgev|rpi3|rpi4|pinephone)
                     parted -s $LDEV mklabel msdos 1> /dev/null 2>&1
                     ;;
                 quartz64-bsp)
@@ -831,7 +831,7 @@ create_img() {
         on2|on2-plus|oc4|ohc4)
             dd if=$TMPDIR/boot/u-boot.bin of=${LDEV} conv=fsync,notrunc bs=512 seek=1 1> /dev/null 2>&1
             ;;
-        vim1|vim2|vim3|radxa-zero|gtking-pro|gsking-x|edgev)
+        vim1|vim2|vim3|radxa-zero|radxa-zero2|gtking-pro|gsking-x|edgev)
             dd if=$TMPDIR/boot/u-boot.bin of=${LDEV} conv=fsync,notrunc bs=442 count=1 1> /dev/null 2>&1
             dd if=$TMPDIR/boot/u-boot.bin of=${LDEV} conv=fsync,notrunc bs=512 skip=1 seek=1 1> /dev/null 2>&1
             ;;
