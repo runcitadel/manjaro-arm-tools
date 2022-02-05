@@ -732,6 +732,9 @@ create_img() {
             esac
             if [[ "$DEVICE" != "quartz64-bsp" ]]; then
                 parted -s $LDEV mkpart primary fat32 32M 256M 1> /dev/null 2>&1
+                if [[ "$DEVICE" = "generic" ]]; then
+                    parted -s $LDEV mkpart primary fat32 0% 256M 1> /dev/null 2>&1
+                fi
                 START=`cat /sys/block/$DEV/${DEV}p1/start`
                 SIZE=`cat /sys/block/$DEV/${DEV}p1/size`
                 END_SECTOR=$(expr $START + $SIZE)
@@ -796,6 +799,9 @@ create_img() {
             esac
                 if [[ "$DEVICE" != "quartz64-bsp" ]]; then
                     parted -s $LDEV mkpart primary fat32 32M 256M 1> /dev/null 2>&1
+                    if [[ "$DEVICE" = "generic" ]]; then
+                        parted -s $LDEV mkpart primary fat32 0% 256M 1> /dev/null 2>&1
+                    fi
                     START=`cat /sys/block/$DEV/${DEV}p1/start`
                     SIZE=`cat /sys/block/$DEV/${DEV}p1/size`
                     END_SECTOR=$(expr $START + $SIZE)
@@ -820,6 +826,7 @@ create_img() {
     esac
         
     # Flash bootloader
+    if [[ "$DEVICE" != "generic" ]]; then
     info "Flashing bootloader..."
     case "$DEVICE" in
     # AMLogic uboots
@@ -858,6 +865,7 @@ create_img() {
             dd if=$TMPDIR/boot/uboot.img of=${LDEV}p1 conv=notrunc,fsync 1> /dev/null 2>&1
             ;;
     esac
+    fi
     
     info "Writing PARTUUIDs..."
     if [[ "$DEVICE" = "quartz64-bsp" ]]; then
