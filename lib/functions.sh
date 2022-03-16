@@ -38,7 +38,7 @@ mkdir -p ${PKGDIR}/pkg-cache
 mkdir -p ${IMGDIR}
 
 usage_deploy_img() {
-    echo "Usage: ${0##*/} [options]"
+    echo "Usage: $PROGNAME [options]"
     echo "    -i <image>         Image to upload. Should be a .xz file."
     echo "    -d <device>        Device the image is for. [Default = rpi4. Options = $(ls -m --width=0 "$PROFILES/arm-profiles/devices/")]"
     echo "    -e <edition>       Edition of the image. [Default = minimal. Options = $(ls -m --width=0 "$PROFILES/arm-profiles/editions/")]"
@@ -53,7 +53,7 @@ usage_deploy_img() {
 }
 
 usage_build_pkg() {
-    echo "Usage: ${0##*/} [options]"
+    echo "Usage: $PROGNAME [options]"
     echo "    -a <arch>          Architecture. [Default = aarch64. Options = any or aarch64]"
     echo "    -p <pkg>           Package to build"
     echo "    -k                 Keep the previous rootfs for this build"
@@ -68,7 +68,7 @@ usage_build_pkg() {
 }
 
 usage_build_img() {
-    echo "Usage: ${0##*/} [options]"
+    echo "Usage: $PROGNAME [options]"
     echo "    -d <device>        Device the image is for. [Default = rpi4. Options = $(ls -m --width=0 "$PROFILES/arm-profiles/devices/")]"
     echo "    -e <edition>       Edition of the image. [Default = minimal. Options = $(ls -m --width=0 "$PROFILES/arm-profiles/editions/")]"
     echo "    -v <version>       Define the version the resulting image should be named. [Default is current YY.MM]"
@@ -89,7 +89,7 @@ usage_build_img() {
 }
 
 usage_build_emmcflasher() {
-    echo "Usage: ${0##*/} [options]"
+    echo "Usage: $PROGNAME [options]"
     echo "    -d <device>        Device the image is for. [Default = rpi4. Options = $(ls -m --width=0 "$PROFILES/arm-profiles/devices/")]"
     echo "    -e <edition>       Edition of the image to download. [Default = minimal. Options = $(ls -m --width=0 "$PROFILES/arm-profiles/editions/")]"
     echo "    -v <version>       Define the version of the release to download. [Default is current YY.MM]"
@@ -104,7 +104,7 @@ usage_build_emmcflasher() {
 }
 
 usage_getarmprofiles() {
-    echo "Usage: ${0##*/} [options]"
+    echo "Usage: $PROGNAME [options]"
     echo '    -f                 Force download of current profiles from the git repository'
     echo '    -p                 Use profiles from pp-factory branch'
     echo '    -h                 This help'
@@ -850,7 +850,7 @@ create_img() {
             dd if=$TMPDIR/boot/u-boot-sunxi-with-spl-$DEVICE-528.bin of=${LDEV} conv=fsync bs=8k seek=1 1> /dev/null 2>&1
             ;;
         # Rockchip RK33XX and RK35XX mainline uboots
-        pbpro|rockpro64|rockpi4b|rockpi4c|nanopc-t4|rock64|roc-cc|stationp1|pinephonepro|clockworkpi-a06|quartz64-a|rock3a|pinenote|edgev|station-m2|station-p2)
+        pbpro|rockpro64|rockpi4b|rockpi4c|nanopc-t4|rock64|roc-cc|stationp1|pinephonepro|clockworkpi-a06|quartz64-a|quartz64-b|rock3a|pinenote|edgev|station-m2|station-p2)
             dd if=$TMPDIR/boot/idbloader.img of=${LDEV} seek=64 conv=notrunc,fsync 1> /dev/null 2>&1
             dd if=$TMPDIR/boot/u-boot.itb of=${LDEV} seek=16384 conv=notrunc,fsync 1> /dev/null 2>&1
             ;;
