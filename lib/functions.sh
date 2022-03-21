@@ -650,7 +650,7 @@ export_and_clean() {
 
 clone_profiles() {
     cd $PROFILES
-    git clone --branch $1 https://gitlab.manjaro.org/manjaro-arm/applications/arm-profiles.git
+    git clone --branch $1 https://github.com/runcitadel/manjaro-arm-profiles.git arm-profiles
 }
 
 get_profiles() {
